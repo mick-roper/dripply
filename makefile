@@ -6,4 +6,4 @@ clean:
 	rm -rf bin/
 
 build:
-	go build -o bin/dripply app/main.go && cp html/index.html bin/
+	go build -o bin/dripply app/main.go && mkdir bin/static && cp html/index.html bin/static/

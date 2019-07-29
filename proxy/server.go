@@ -18,7 +18,7 @@ func Listen(addr string) error {
 
 	r := mux.NewRouter()
 
-	r.HandleFunc("/", handlers.HandleWebAppRequest)
+	r.HandleFunc("/", handlers.HandleHTMLRequest)
 
 	server := &http.Server{
 		Handler:      r,
