@@ -12,15 +12,16 @@ import (
 	"github.com/gorilla/mux"
 
 	handlers "./handlers"
+	targets "./targets"
 )
 
-var proxyData = make(map[string]*ProxyTarget)
+var targetCollection = targets.NewTargetCollection()
 var httpClient = &http.Client{}
 
 // Listen for HTTP traffic
 func Listen(addr, cpanelHostname string) error {
 	// todo: remove this later
-	proxyData["localhost:8080"] = &ProxyTarget{"Https", "symmetric.solutions"}
+	targetCollection.SetTarget("localhost:8080", &targets.SimpleTarget{"symmtric.solutions", "https"})
 
 	if addr == "" {
 		return errors.New("addr is not defined")
@@ -54,7 +55,7 @@ func Listen(addr, cpanelHostname string) error {
 
 func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	t := proxyData[r.Host]
+	t := targetCollection.GetTarget(r.Host)
 
 	if t == nil {
 		w.WriteHeader(404)
@@ -63,8 +64,8 @@ func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := url.URL{
-		Scheme: t.Scheme,
-		Host:   t.Host,
+		Scheme: t.Scheme(),
+		Host:   t.Host(),
 		Path:   r.RequestURI,
 	}
 

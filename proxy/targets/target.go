@@ -14,6 +14,14 @@ type TargetCollection struct {
 	mux     sync.Mutex
 }
 
+// NewTargetCollection creates a new, properly initialised TargetCollection
+func NewTargetCollection() *TargetCollection {
+	return &TargetCollection{
+		entries: make(map[string]ProxyTarget),
+		mux:     sync.Mutex{},
+	}
+}
+
 // SetTarget sets/adds a target to the collection
 func (t *TargetCollection) SetTarget(originalHost string, target ProxyTarget) {
 	if originalHost == "" || target == nil {
