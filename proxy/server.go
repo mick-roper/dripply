@@ -81,6 +81,8 @@ func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	defer pResp.Body.Close()
+
 	for key, values := range pResp.Header {
 		w.Header().Set(key, strings.Join(values, "; "))
 	}
