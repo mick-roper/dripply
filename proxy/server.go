@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"log"
 	"net/http"
 	"time"
 
@@ -26,6 +27,8 @@ func Listen(addr string) error {
 		ReadTimeout:  15 * time.Second,
 		WriteTimeout: 15 * time.Second,
 	}
+
+	log.Println("SERVER: listening @", addr)
 
 	return server.ListenAndServe()
 }
