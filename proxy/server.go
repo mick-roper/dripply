@@ -17,11 +17,6 @@ import (
 var proxyData = make(map[string]*ProxyTarget)
 var httpClient = &http.Client{}
 
-type ProxyTarget struct {
-	Scheme string
-	Host   string
-}
-
 // Listen for HTTP traffic
 func Listen(addr, cpanelHostname string) error {
 	// todo: remove this later
