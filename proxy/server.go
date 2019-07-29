@@ -64,8 +64,8 @@ func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	}
 
 	u := url.URL{
-		Scheme: t.Scheme(),
-		Host:   t.Host(),
+		Scheme: t.Scheme,
+		Host:   t.Host,
 		Path:   r.RequestURI,
 	}
 
