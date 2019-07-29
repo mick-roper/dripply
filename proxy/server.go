@@ -34,6 +34,7 @@ func Listen(addr, cpanelHostname string) error {
 	r.Host(cpanelHostname).PathPrefix("/intercom").HandlerFunc(handlers.HandleSocketRequest)
 	r.Host(cpanelHostname).Path("/").HandlerFunc(handlers.HandleHTMLRequest)
 
+	// proxy stuff
 	r.HandleFunc("/", proxyHandlerFunc)
 
 	server := &http.Server{
