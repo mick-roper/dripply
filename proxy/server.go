@@ -6,6 +6,8 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+
+	"./handlers"
 )
 
 // Listen for HTTP traffic
@@ -16,7 +18,7 @@ func Listen(addr string) error {
 
 	r := mux.NewRouter()
 
-	// todo: wire it up
+	r.Handle("/", handlers.HandleWebAppRequest)
 
 	server := &http.Server{
 		Handler:      r,
