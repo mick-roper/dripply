@@ -98,6 +98,8 @@ func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				if err == io.EOF {
 					w.Write(buffer[:i])
+				} else {
+					log.Println("ERROR: ", err)
 				}
 
 				break
