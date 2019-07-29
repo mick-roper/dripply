@@ -1,7 +1,19 @@
 package main
 
-import "log"
+import (
+	"flag"
+	"fmt"
+	"log"
+
+	proxy "../proxy"
+)
+
+var port = flag.Int("port", 8080, "the port the server will listen on")
 
 func main() {
-	log.Print("hello, world")
+	flag.Parse()
+
+	addr := fmt.Sprintf(":%v", *port)
+
+	log.Fatal(proxy.Listen(addr))
 }
