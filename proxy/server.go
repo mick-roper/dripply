@@ -20,7 +20,7 @@ func Listen(addr string) error {
 	r := mux.NewRouter()
 
 	r.PathPrefix("/api").Handler(handlers.NewAPIRequestRouter())
-	r.PathPrefix("/chatter").HandlerFunc(handlers.HandleSocketRequest)
+	r.PathPrefix("/intercom").HandlerFunc(handlers.HandleSocketRequest)
 	r.HandleFunc("/", handlers.HandleHTMLRequest)
 
 	server := &http.Server{
