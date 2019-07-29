@@ -14,11 +14,19 @@ import (
 	handlers "./handlers"
 )
 
-var proxyData = make(map[string]string)
+var proxyData = make(map[string]*ProxyTarget)
 var httpClient = &http.Client{}
+
+type ProxyTarget struct {
+	Scheme string
+	Host   string
+}
 
 // Listen for HTTP traffic
 func Listen(addr, cpanelHostname string) error {
+	// todo: remove this later
+	proxyData["localhost:8080"] = &ProxyTarget{"Https", "symmetric.solutions"}
+
 	if addr == "" {
 		return errors.New("addr is not defined")
 	}
@@ -51,17 +59,17 @@ func Listen(addr, cpanelHostname string) error {
 
 func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
-	proxyTarget := proxyData[r.Host]
+	t := proxyData[r.Host]
 
-	if proxyTarget == "" {
+	if t == nil {
 		w.WriteHeader(404)
 		w.Write([]byte("target not found for that hostname"))
 		return
 	}
 
 	u := url.URL{
-		Scheme: "http",
-		Host:   proxyTarget,
+		Scheme: t.Scheme,
+		Host:   t.Host,
 		Path:   r.RequestURI,
 	}
 
