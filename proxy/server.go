@@ -15,7 +15,7 @@ import (
 	targets "./targets"
 )
 
-var targetCollection = targets.NewTargetCollection()
+var targetCollection = &targets.TargetCollection{}
 var httpClient = &http.Client{}
 
 // Listen for HTTP traffic
