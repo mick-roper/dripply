@@ -14,7 +14,7 @@ func HandleSocketRequest(w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 
 	if err != nil {
-		log.Print("ERROR:", err)
+		log.Println("ERROR:", err)
 		return
 	}
 
@@ -24,10 +24,17 @@ func HandleSocketRequest(w http.ResponseWriter, r *http.Request) {
 		_, message, err := conn.ReadMessage()
 
 		if err != nil {
-			log.Print("ERROR:", err)
+			log.Println("ERROR:", err)
 			continue
 		}
 
-		log.Print("MESSAGE:", message)
+		log.Println("MESSAGE:", string(message))
+
+		err = conn.WriteMessage(websocket.TextMessage, message)
+
+		if err != nil {
+			log.Println("ERROR:", err)
+			continue
+		}
 	}
 }
