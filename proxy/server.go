@@ -1,4 +1,4 @@
-package server
+package proxy
 
 import (
 	"errors"
@@ -17,7 +17,7 @@ import (
 var httpClient = &http.Client{}
 
 // Listen for HTTP traffic
-func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollection) error {
+func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollection, buffer *MemoryBuffer) error {
 	if addr == "" {
 		return errors.New("addr must be provided")
 	}
@@ -46,7 +46,7 @@ func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollect
 	r.Host(cpanelHostname).PathPrefix("/intercom").HandlerFunc(handlers.HandleSocketRequest)
 
 	// proxy stuff
-	r.HandleFunc("/", createProxyHandlerFunc(targetCollection))
+	r.HandleFunc("/", createProxyHandlerFunc(targetCollection, buffer))
 
 	server := &http.Server{
 		Handler:      r,
@@ -60,9 +60,13 @@ func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollect
 	return server.ListenAndServe()
 }
 
-func createProxyHandlerFunc(targetCollection *targets.TargetCollection) func(http.ResponseWriter, *http.Request) {
+func createProxyHandlerFunc(targetCollection *targets.TargetCollection, buffer *MemoryBuffer) func(http.ResponseWriter, *http.Request) {
 	if targetCollection == nil {
 		log.Panic("targetCollection must be provided")
+	}
+
+	if buffer == nil {
+		log.Panic("buffer must be provided")
 	}
 
 	return func(w http.ResponseWriter, r *http.Request) {
@@ -92,14 +96,15 @@ func createProxyHandlerFunc(targetCollection *targets.TargetCollection) func(htt
 		w.WriteHeader(pResp.StatusCode)
 
 		if pResp.ContentLength != 0 {
-			buffer := make([]byte, 128*1024)
+			block := buffer.GetNextBlock()
+			defer buffer.ReturnBlock(block)
 
 			for {
-				i, err := pResp.Body.Read(buffer)
+				i, err := pResp.Body.Read(block.Bytes)
 
 				if err != nil {
 					if err == io.EOF {
-						w.Write(buffer[:i])
+						w.Write(block.Bytes[:i])
 					} else {
 						log.Println("ERROR: ", err)
 					}
@@ -107,7 +112,7 @@ func createProxyHandlerFunc(targetCollection *targets.TargetCollection) func(htt
 					break
 				}
 
-				w.Write(buffer)
+				w.Write(block.Bytes)
 			}
 		}
 	}
