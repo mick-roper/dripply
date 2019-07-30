@@ -3,12 +3,12 @@ package proxy
 import (
 	"errors"
 	"sync"
-	"time"
+	"log"
 )
 
 type MemoryBuffer struct {
-	nextBlock int
 	blockSize int
+	usedBlocks []bool
 	bytes     []byte
 	mux       sync.Mutex
 }
@@ -23,7 +23,10 @@ func NewMemoryBuffer(bufferSize, blockSize int) (*MemoryBuffer, error) {
 		return nil, errors.New("buffersize must be larger than or equal to blocksize")
 	}
 
+	usedBlocks := make([]bool, bufferSize/blockSize)
+
 	return &MemoryBuffer{
+		usedBlocks: usedBlocks,
 		blockSize: blockSize,
 		bytes:     make([]byte, bufferSize),
 		mux:       sync.Mutex{},
@@ -31,24 +34,18 @@ func NewMemoryBuffer(bufferSize, blockSize int) (*MemoryBuffer, error) {
 }
 
 func (b *MemoryBuffer) GetNextBlock() *Block {
-	for b.nextBlock-1 >= len(b.bytes)/b.blockSize {
-		// wait for a memory block to become available
-		time.Sleep(time.Millisecond * 5)
-	}
-
 	b.mux.Lock()
 	defer b.mux.Unlock()
+	
+	i := b.nextBlockIndex()
+	bytes := b.bytes[i:b.blockSize]
 
-	bytes := b.bytes[b.nextBlock:b.blockSize]
+	log.Println("DEBUG: getting block", i)
 
-	block := &Block{
-		index: b.nextBlock,
+	return &Block{
+		index: i,
 		Bytes: bytes,
 	}
-
-	b.nextBlock++
-
-	return block
 }
 
 func (b *MemoryBuffer) ReturnBlock(block *Block) {
@@ -59,5 +56,19 @@ func (b *MemoryBuffer) ReturnBlock(block *Block) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
-	b.nextBlock = block.index
+	log.Println("DEBUG: returning block", block.index)
+
+	b.usedBlocks[block.index] = false
+}
+
+func (b *MemoryBuffer) nextBlockIndex() int {
+	for n, x := range b.usedBlocks {
+		if x == false {
+			b.usedBlocks[n] = true
+			return n
+		}
+	}
+
+	log.Panic("buffer overflow!")
+	return -1
 }
