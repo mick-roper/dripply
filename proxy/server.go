@@ -14,13 +14,24 @@ import (
 	targets "./targets"
 )
 
-var targetCollection = &targets.TargetCollection{}
 var httpClient = &http.Client{}
 
 // Listen for HTTP traffic
-func Listen(addr, cpanelHostname string) error {
+func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollection) error {
+	if addr == "" {
+		return errors.New("addr must be provided")
+	}
+
+	if cpanelHostname == "" {
+		return errors.New("cpanelHostname must be provided")
+	}
+
+	if targetCollection == nil {
+		return errors.New("targetCollection must be provided")
+	}
+
 	// todo: remove this later
-	targetCollection.SetTarget("localhost:8080", &targets.SimpleTarget{"symmtric.solutions", "https"})
+	targetCollection.SetTarget("localhost:8080", &targets.SimpleTarget{"symmetric.solutions", "https"})
 
 	if addr == "" {
 		return errors.New("addr is not defined")
@@ -38,7 +49,7 @@ func Listen(addr, cpanelHostname string) error {
 	r.Host(cpanelHostname).PathPrefix("/intercom").HandlerFunc(handlers.HandleSocketRequest)
 
 	// proxy stuff
-	r.HandleFunc("/", proxyHandlerFunc)
+	r.HandleFunc("/", createProxyHandlerFunc(targetCollection))
 
 	server := &http.Server{
 		Handler:      r,
@@ -52,49 +63,55 @@ func Listen(addr, cpanelHostname string) error {
 	return server.ListenAndServe()
 }
 
-func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
-	defer r.Body.Close()
-	t := targetCollection.GetTarget(r.Host)
-
-	if t == nil {
-		w.WriteHeader(404)
-		w.Write([]byte("target not found for that hostname"))
-		return
+func createProxyHandlerFunc(targetCollection *targets.TargetCollection) func(http.ResponseWriter, *http.Request) {
+	if targetCollection != nil {
+		log.Panic("targetCollection must be provided")
 	}
 
-	pResp, err := t.GetResponse(httpClient, r.Method, r.RequestURI, r.Body)
+	return func(w http.ResponseWriter, r *http.Request) {
+		defer r.Body.Close()
+		t := targetCollection.GetTarget(r.Host)
 
-	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte("an error occured while creating the proxy request"))
-		return
-	}
+		if t == nil {
+			w.WriteHeader(404)
+			w.Write([]byte("target not found for that hostname"))
+			return
+		}
 
-	defer pResp.Body.Close()
+		pResp, err := t.GetResponse(httpClient, r.Method, r.RequestURI, r.Body)
 
-	for key, values := range pResp.Header {
-		w.Header().Set(key, strings.Join(values, "; "))
-	}
+		if err != nil {
+			w.WriteHeader(500)
+			w.Write([]byte("an error occured while creating the proxy request"))
+			return
+		}
 
-	w.WriteHeader(pResp.StatusCode)
+		defer pResp.Body.Close()
 
-	if pResp.ContentLength != 0 {
-		buffer := make([]byte, 128*1024)
+		for key, values := range pResp.Header {
+			w.Header().Set(key, strings.Join(values, "; "))
+		}
 
-		for {
-			i, err := pResp.Body.Read(buffer)
+		w.WriteHeader(pResp.StatusCode)
 
-			if err != nil {
-				if err == io.EOF {
-					w.Write(buffer[:i])
-				} else {
-					log.Println("ERROR: ", err)
+		if pResp.ContentLength != 0 {
+			buffer := make([]byte, 128*1024)
+
+			for {
+				i, err := pResp.Body.Read(buffer)
+
+				if err != nil {
+					if err == io.EOF {
+						w.Write(buffer[:i])
+					} else {
+						log.Println("ERROR: ", err)
+					}
+
+					break
 				}
 
-				break
+				w.Write(buffer)
 			}
-
-			w.Write(buffer)
 		}
 	}
 }
