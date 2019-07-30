@@ -8,6 +8,14 @@ type TargetCollection struct {
 	mux     sync.Mutex
 }
 
+// NewTargetCollection creates a properly initialised target collection
+func NewTargetCollection() *TargetCollection {
+	return &TargetCollection{
+		entries: make(map[string]Target),
+		mux:     sync.Mutex{},
+	}
+}
+
 // SetTarget sets/adds a target to the collection
 func (t *TargetCollection) SetTarget(originalHost string, target Target) {
 	if originalHost == "" || target == nil {
