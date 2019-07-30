@@ -40,7 +40,7 @@ func (b *MemoryBuffer) GetNextBlock() *Block {
 	i := b.nextBlockIndex()
 	bytes := b.bytes[i:b.blockSize]
 
-	log.Println("DEBUG: getting block", i)
+	// log.Println("DEBUG: getting block", i)
 
 	return &Block{
 		index: i,
@@ -56,7 +56,7 @@ func (b *MemoryBuffer) ReturnBlock(block *Block) {
 	b.mux.Lock()
 	defer b.mux.Unlock()
 
-	log.Println("DEBUG: returning block", block.index)
+	// log.Println("DEBUG: returning block", block.index)
 
 	b.usedBlocks[block.index] = false
 }

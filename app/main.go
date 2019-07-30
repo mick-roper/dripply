@@ -4,6 +4,8 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"runtime"
+	"time"
 
 	proxy "../proxy"
 	targets "../proxy/targets"
@@ -31,5 +33,27 @@ func main() {
 		log.Fatal(err)
 	}
 
+	go func() {
+		for {
+			printMemUsage()
+
+			time.Sleep(1 * time.Second)
+		}
+	}()
+
 	log.Fatal(proxy.Listen(addr, *cpanelHostname, targetCollection, memoryBuffer))
+}
+
+func printMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	// For info on each, see: https://golang.org/pkg/runtime/#MemStats
+	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
+}
+
+func bToMb(b uint64) uint64 {
+	return b / 1024 / 1024
 }
