@@ -61,7 +61,7 @@ func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollect
 }
 
 func createProxyHandlerFunc(targetCollection *targets.TargetCollection) func(http.ResponseWriter, *http.Request) {
-	if targetCollection != nil {
+	if targetCollection == nil {
 		log.Panic("targetCollection must be provided")
 	}
 
