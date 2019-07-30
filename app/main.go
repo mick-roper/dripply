@@ -17,7 +17,7 @@ func main() {
 
 	addr := fmt.Sprintf(":%v", *port)
 
-	targetCollection := &targets.TargetCollection{}
+	targetCollection := targets.NewTargetCollection()
 
 	targetCollection.SetTarget("dummy-1.localhost", &targets.SimpleTarget{Hostname: "symmetric.solutions", Scheme: "https"})
 
