@@ -5,7 +5,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 	"time"
 
@@ -63,25 +62,11 @@ func proxyHandlerFunc(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	u := url.URL{
-		Scheme: t.Scheme,
-		Host:   t.Host,
-		Path:   r.RequestURI,
-	}
-
-	pReq, err := http.NewRequest(r.Method, u.String(), r.Body)
+	pResp, err := t.GetResponse(httpClient, r.Method, r.RequestURI, r.Body)
 
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte("an error occured while creating the proxy request"))
-		return
-	}
-
-	pResp, err := httpClient.Do(pReq)
-
-	if err != nil {
-		w.WriteHeader(500)
-		w.Write([]byte("an error occured while getting the proxy response"))
 		return
 	}
 
