@@ -19,5 +19,7 @@ func main() {
 
 	targetCollection := &targets.TargetCollection{}
 
+	targetCollection.SetTarget("localhost:8080", &targets.SimpleTarget{Hostname: "symmetric.solutions", Scheme: "https"})
+
 	log.Fatal(proxy.Listen(addr, *cpanelHostname, targetCollection))
 }
