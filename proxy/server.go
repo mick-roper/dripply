@@ -31,7 +31,7 @@ func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollect
 	}
 
 	// todo: remove this later
-	targetCollection.SetTarget("localhost:8080", &targets.SimpleTarget{"symmetric.solutions", "https"})
+	targetCollection.SetTarget("localhost:8080", &targets.SimpleTarget{Hostname: "symmetric.solutions", Scheme: "https"})
 
 	if addr == "" {
 		return errors.New("addr is not defined")
