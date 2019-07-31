@@ -17,7 +17,7 @@ import (
 var httpClient = &http.Client{}
 
 // Listen for HTTP traffic
-func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollection, buffer *MemoryBuffer) error {
+func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollection, pool *Pool) error {
 	if addr == "" {
 		return errors.New("addr must be provided")
 	}
@@ -46,7 +46,7 @@ func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollect
 	r.Host(cpanelHostname).PathPrefix("/intercom").HandlerFunc(handlers.HandleSocketRequest)
 
 	// proxy stuff
-	r.HandleFunc("/", createProxyHandlerFunc(targetCollection, buffer))
+	r.HandleFunc("/", createProxyHandlerFunc(targetCollection, pool))
 
 	server := &http.Server{
 		Handler:      r,
@@ -60,12 +60,12 @@ func Listen(addr, cpanelHostname string, targetCollection *targets.TargetCollect
 	return server.ListenAndServe()
 }
 
-func createProxyHandlerFunc(targetCollection *targets.TargetCollection, buffer *MemoryBuffer) func(http.ResponseWriter, *http.Request) {
+func createProxyHandlerFunc(targetCollection *targets.TargetCollection, pool *Pool) func(http.ResponseWriter, *http.Request) {
 	if targetCollection == nil {
 		log.Panic("targetCollection must be provided")
 	}
 
-	if buffer == nil {
+	if pool == nil {
 		log.Panic("buffer must be provided")
 	}
 
@@ -96,15 +96,15 @@ func createProxyHandlerFunc(targetCollection *targets.TargetCollection, buffer *
 		w.WriteHeader(pResp.StatusCode)
 
 		if pResp.ContentLength != 0 {
-			block := buffer.GetNextBlock()
-			defer buffer.ReturnBlock(block)
+			block := pool.GetNextBlock()
+			defer pool.ReturnBlock(block)
 
 			for {
 				i, err := pResp.Body.Read(block.Bytes)
 
 				if err != nil {
 					if err == io.EOF {
-						w.Write((block.Bytes)[:i])
+						w.Write(block.Bytes[:i])
 					} else {
 						log.Println("ERROR: ", err)
 					}
