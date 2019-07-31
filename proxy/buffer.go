@@ -2,7 +2,6 @@ package proxy
 
 import (
 	"errors"
-	"log"
 	"sync"
 )
 
@@ -71,6 +70,5 @@ func (b *Pool) nextBlockIndex() int {
 		}
 	}
 
-	log.Panic("buffer overflow!")
 	return -1
 }
