@@ -2,53 +2,55 @@ package proxy
 
 import (
 	"errors"
-	"sync"
 	"log"
+	"sync"
 )
 
-type MemoryBuffer struct {
-	blockSize int
+// Pool of bytes that requests can use to buffer responses
+type Pool struct {
+	blockSize  int
 	usedBlocks []bool
-	bytes     []byte
-	mux       sync.Mutex
+	bytes      []byte
+	mux        sync.Mutex
 }
 
+// Block of the pool that can be used to buffer a response
 type Block struct {
 	index int
 	Bytes []byte
 }
 
-func NewMemoryBuffer(bufferSize, blockSize int) (*MemoryBuffer, error) {
+// NewPool creates a new poroperly initialised pool
+func NewPool(bufferSize, blockSize int) (*Pool, error) {
 	if blockSize > bufferSize {
 		return nil, errors.New("buffersize must be larger than or equal to blocksize")
 	}
 
 	usedBlocks := make([]bool, bufferSize/blockSize)
 
-	return &MemoryBuffer{
+	return &Pool{
 		usedBlocks: usedBlocks,
-		blockSize: blockSize,
-		bytes:     make([]byte, bufferSize),
-		mux:       sync.Mutex{},
+		blockSize:  blockSize,
+		bytes:      make([]byte, bufferSize),
+		mux:        sync.Mutex{},
 	}, nil
 }
 
-func (b *MemoryBuffer) GetNextBlock() *Block {
+// GetNextBlock from the pool
+func (b *Pool) GetNextBlock() *Block {
 	b.mux.Lock()
 	defer b.mux.Unlock()
-	
-	i := b.nextBlockIndex()
-	bytes := b.bytes[i:b.blockSize]
 
-	// log.Println("DEBUG: getting block", i)
+	i := b.nextBlockIndex()
 
 	return &Block{
 		index: i,
-		Bytes: bytes,
+		Bytes: b.bytes[i:b.blockSize],
 	}
 }
 
-func (b *MemoryBuffer) ReturnBlock(block *Block) {
+// ReturnBlock to the pool
+func (b *Pool) ReturnBlock(block *Block) {
 	if block == nil {
 		return
 	}
@@ -61,7 +63,7 @@ func (b *MemoryBuffer) ReturnBlock(block *Block) {
 	b.usedBlocks[block.index] = false
 }
 
-func (b *MemoryBuffer) nextBlockIndex() int {
+func (b *Pool) nextBlockIndex() int {
 	for n, x := range b.usedBlocks {
 		if x == false {
 			b.usedBlocks[n] = true

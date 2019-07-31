@@ -104,7 +104,7 @@ func createProxyHandlerFunc(targetCollection *targets.TargetCollection, buffer *
 
 				if err != nil {
 					if err == io.EOF {
-						w.Write(block.Bytes[:i])
+						w.Write((block.Bytes)[:i])
 					} else {
 						log.Println("ERROR: ", err)
 					}
